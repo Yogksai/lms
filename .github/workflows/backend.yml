@@ -47,7 +47,7 @@ jobs:
         with:
           version: "0.13.0"
           enable-cache: true
-      - run: uv sync --locked
+      - run: uv sync --locked --python 3.14
       - run: uv run ruff format --check src bin tests migrations
       - run: uv run ruff check src bin tests migrations
       - run: uv run mypy

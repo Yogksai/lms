@@ -17,7 +17,7 @@ class Settings(EnvironmentSettings):
     )
 
     @model_validator(mode="after")
-    def validate_credential_origins(self) -> "Settings":
+    def validate_credential_origins(self) -> Settings:
         if self.allow_credentials and "*" in self.allow_origins:
             raise ValueError("Credentialed CORS requires explicit origins")
         return self
