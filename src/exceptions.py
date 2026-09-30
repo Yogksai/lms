@@ -2,6 +2,19 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
 from src.auth.exceptions import CredentialsException, UserAlreadyExists, UserNotFound
+from src.courses.exceptions import ContentNotFound, LessonAccessDenied
+
+
+async def content_not_found_handler(request: Request, exception: Exception) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND, content={"detail": "Content not found"}
+    )
+
+
+async def lesson_access_handler(request: Request, exception: Exception) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_403_FORBIDDEN, content={"detail": "Course access required"}
+    )
 
 
 async def already_exists_handler(request: Request, exception: Exception) -> JSONResponse:
@@ -23,6 +36,8 @@ async def credentials_handler(request: Request, exception: Exception) -> JSONRes
 
 
 def init_exception_handlers(app: FastAPI) -> None:
+    app.add_exception_handler(ContentNotFound, content_not_found_handler)
+    app.add_exception_handler(LessonAccessDenied, lesson_access_handler)
     app.add_exception_handler(UserAlreadyExists, already_exists_handler)
     app.add_exception_handler(UserNotFound, not_found_handler)
     app.add_exception_handler(CredentialsException, credentials_handler)
