@@ -1,4 +1,7 @@
+import hashlib
+import secrets
 from datetime import UTC, datetime, timedelta
+from uuid import UUID
 
 import jwt
 
@@ -15,11 +18,12 @@ class TokenService:
         self.settings = jwt_settings
         self.secret_key = security_settings.secret_key.get_secret_value()
 
-    def create_access_token(self, user_id: int) -> AccessTokenDTO:
+    def create_access_token(self, user_id: int, session_id: UUID) -> AccessTokenDTO:
         now = datetime.now(UTC)
         token = jwt.encode(
             {
                 "sub": str(user_id),
+                "sid": str(session_id),
                 "token_type": "access",
                 "iat": now,
                 "exp": now + timedelta(seconds=self.settings.access_token_expire_seconds),
@@ -39,13 +43,23 @@ class TokenService:
                 algorithms=[self.settings.algorithm],
                 issuer=self.settings.issuer,
                 audience=self.settings.audience,
-                options={"require": ["sub", "iat", "exp", "iss", "aud", "token_type"]},
+                options={"require": ["sub", "sid", "iat", "exp", "iss", "aud", "token_type"]},
             )
             if payload["token_type"] != "access":
+                raise CredentialsException
+            if not isinstance(payload["sid"], str):
                 raise CredentialsException
             user_id = int(payload["sub"])
             if user_id <= 0:
                 raise CredentialsException
-            return TokenPayloadDTO(user_id=user_id)
+            return TokenPayloadDTO(user_id=user_id, session_id=UUID(payload["sid"]))
         except (jwt.PyJWTError, ValueError, TypeError) as error:
             raise CredentialsException from error
+
+    @staticmethod
+    def create_refresh_token() -> str:
+        return secrets.token_urlsafe(32)
+
+    @staticmethod
+    def hash_refresh_token(token: str) -> str:
+        return hashlib.sha256(token.encode("utf-8")).hexdigest()
