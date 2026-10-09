@@ -1,8 +1,19 @@
 from fastapi import FastAPI, Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from src.auth.exceptions import CredentialsException, UserAlreadyExists, UserNotFound
 from src.courses.exceptions import ContentNotFound, LessonAccessDenied
+
+
+async def validation_handler(request: Request, exception: Exception) -> JSONResponse:
+    assert isinstance(exception, RequestValidationError)
+    # Request inputs can contain passwords or tokens; never echo them in validation errors.
+    errors = [
+        {"loc": error["loc"], "msg": error["msg"], "type": error["type"]}
+        for error in exception.errors()
+    ]
+    return JSONResponse(status_code=422, content={"detail": errors})
 
 
 async def content_not_found_handler(request: Request, exception: Exception) -> JSONResponse:
@@ -36,6 +47,7 @@ async def credentials_handler(request: Request, exception: Exception) -> JSONRes
 
 
 def init_exception_handlers(app: FastAPI) -> None:
+    app.add_exception_handler(RequestValidationError, validation_handler)
     app.add_exception_handler(ContentNotFound, content_not_found_handler)
     app.add_exception_handler(LessonAccessDenied, lesson_access_handler)
     app.add_exception_handler(UserAlreadyExists, already_exists_handler)
