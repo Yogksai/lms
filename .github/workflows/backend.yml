@@ -1,0 +1,73 @@
+name: Backend
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: lms_test_ci
+          POSTGRES_USER: lms
+          POSTGRES_PASSWORD: lms-test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U lms -d lms_test_ci"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: "5432"
+      DB_NAME: lms_test_ci
+      DB_USER: lms
+      DB_PASSWORD: lms-test
+      REDIS_URL: redis://127.0.0.1:6379/0
+      SECRET_KEY: ci-only-signing-key-not-for-deployment-123456789
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.13.0"
+          enable-cache: true
+      - run: uv sync --locked
+      - run: uv run ruff format --check src bin tests migrations
+      - run: uv run ruff check src bin tests migrations
+      - run: uv run mypy
+      - run: uv run pytest -m "not integration" --cov=src --cov-report=term-missing
+      - name: Apply migrations and verify metadata
+        run: |
+          uv run alembic upgrade head
+          uv run alembic check
+      - name: PostgreSQL integration tests
+        env:
+          LMS_INTEGRATION_TESTS: "1"
+        run: uv run pytest -m integration
+      - name: Verify reversible migrations on the disposable CI database
+        run: |
+          uv run alembic downgrade base
+          uv run alembic upgrade head
+          uv run alembic check
+      - name: Verify service readiness
+        run: uv run python -m bin.check_ready
+      - name: Validate Compose and build runtime image
+        run: |
+          docker compose config --quiet
+          docker build --tag lms-backend:ci .
