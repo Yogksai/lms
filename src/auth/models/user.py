@@ -6,7 +6,9 @@ from src.libs.base_model import Base
 
 class UserModel(Base):
     __tablename__ = "users"
-    __table_args__ = (CheckConstraint("role IN ('student', 'teacher', 'admin')", name="role_valid"),)
+    __table_args__ = (
+        CheckConstraint("role IN ('student', 'teacher', 'admin')", name="role_valid"),
+    )
 
     name: Mapped[str] = mapped_column(String(30))
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
