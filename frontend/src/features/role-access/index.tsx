@@ -16,7 +16,8 @@ export function RoleAccess({ admin = false, children }: { admin?: boolean; child
     retry: false,
   });
   if (!user) return <Navigate to="/login" replace />;
-  if (profile.isPending || profile.isFetching) return <Notice>Проверяем права…</Notice>;
+  if (profile.isPending || (!profile.isFetchedAfterMount && profile.isFetching))
+    return <Notice>Проверяем права…</Notice>;
   if (profile.isError)
     return (
       <Notice error>

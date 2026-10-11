@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { authoringKey, useAuthoringGateway } from '@/entities/authoring';
 import type { Command } from '@/entities/authoring';
+import { useAccount } from '@/entities/session';
 import { HttpError } from '@/shared/api';
 export function authoringError(error: unknown): string {
   if (error instanceof HttpError) {
@@ -17,10 +18,19 @@ export function authoringError(error: unknown): string {
 export function useCourseCommand(id: number, revision: number) {
   const gateway = useAuthoringGateway();
   const client = useQueryClient();
+  const { session } = useAccount();
   return useMutation({
-    mutationFn: (command: Command) => gateway.command(id, revision, command),
-    onSuccess: async (course) => {
+    onMutate: () => ({ epoch: session.identityVersion() }),
+    mutationFn: async (command: Command) => {
+      const epoch = session.identityVersion();
+      const course = await gateway.command(id, revision, command);
+      if (session.identityVersion() !== epoch) throw new HttpError(401, 'Session changed');
+      return course;
+    },
+    onSuccess: async (course, _command, context) => {
+      if (context.epoch !== session.identityVersion()) return;
       await client.cancelQueries({ queryKey: authoringKey(id) });
+      if (context.epoch !== session.identityVersion()) return;
       client.setQueryData(authoringKey(id), course);
       await Promise.all([
         client.invalidateQueries({ queryKey: ['private', 'authoring', 'list'] }),

@@ -1,6 +1,7 @@
 from collections.abc import Awaitable, Callable
 
 from fastapi import HTTPException
+from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError
 
 from src.auth.dto import UserDTO
@@ -238,7 +239,12 @@ class AuthoringService:
                     raise HTTPException(422, "Publishing requires a lesson in every module")
                 for module in course.modules:
                     for lesson in module.lessons:
-                        LessonWriteDTO.model_validate(lesson, from_attributes=True)
+                        try:
+                            LessonWriteDTO.model_validate(lesson, from_attributes=True)
+                        except ValidationError as error:
+                            raise HTTPException(
+                                422, "Correct invalid lesson content before publishing"
+                            ) from error
             course.is_published = status == "published"
             course.is_archived = status == "archived"
 

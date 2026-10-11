@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthoringGateway, statusLabels } from '@/entities/authoring';
+import { useAccount } from '@/entities/session';
+import { HttpError } from '@/shared/api';
 import { CourseForm, authoringError } from '@/features/course-authoring';
 import { RoleAccess } from '@/features/role-access';
 import { Button, Heading, Notice } from '@/shared/ui';
@@ -11,11 +13,19 @@ function Catalog() {
   const gateway = useAuthoringGateway();
   const client = useQueryClient();
   const navigate = useNavigate();
+  const { session } = useAccount();
   const query = useQuery(gateway.courses(offset));
   const create = useMutation({
-    mutationFn: gateway.create,
-    onSuccess: async (course) => {
+    onMutate: () => ({ epoch: session.identityVersion() }),
+    mutationFn: async (input: Parameters<typeof gateway.create>[0]) => {
+      const epoch = session.identityVersion();
+      const course = await gateway.create(input);
+      if (session.identityVersion() !== epoch) throw new HttpError(401, 'Session changed');
+      return course;
+    },
+    onSuccess: async (course, _input, context) => {
       await client.invalidateQueries({ queryKey: ['private', 'authoring', 'list'] });
+      if (context.epoch !== session.identityVersion()) return;
       navigate('/authoring/courses/' + course.id);
     },
   });

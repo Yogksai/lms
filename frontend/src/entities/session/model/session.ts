@@ -21,6 +21,7 @@ export class SessionManager {
     for (const listener of this.listeners) listener();
   }
   accessToken = () => this.pair?.access_token ?? null;
+  identityVersion = () => this.epoch;
   invalidate = () => {
     this.epoch++;
     this.pair = null;

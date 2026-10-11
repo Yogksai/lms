@@ -123,4 +123,19 @@ describe('in-memory sessions', () => {
   it('a fresh manager has no remembered session', () => {
     expect(setup().session.snapshot()).toBeNull();
   });
+  it('updates live roles and ignores a role response after logout', async () => {
+    const { session, gateway } = setup();
+    await session.signIn({ email: user.email, password: 'password' });
+    vi.mocked(gateway.me).mockResolvedValue({ ...user, role: 'teacher' });
+    await session.reloadProfile();
+    expect(session.snapshot()?.role).toBe('teacher');
+    const pending = deferred<typeof user>();
+    vi.mocked(gateway.me).mockReturnValue(pending.promise);
+    const reload = session.reloadProfile();
+    const check = expect(reload).rejects.toThrow();
+    await session.signOut();
+    pending.resolve(user);
+    await check;
+    expect(session.snapshot()).toBeNull();
+  });
 });

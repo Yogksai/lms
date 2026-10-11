@@ -18,9 +18,21 @@ export function Header() {
             Курсы
           </NavLink>
           {user && ['teacher', 'admin'].includes(user.role) && (
-            <NavLink to="/authoring/courses">Редактор</NavLink>
+            <NavLink
+              to="/authoring/courses"
+              className={({ isActive }) => (isActive ? styles.active : '')}
+            >
+              Редактор
+            </NavLink>
           )}
-          {user?.role === 'admin' && <NavLink to="/admin/users">Пользователи</NavLink>}
+          {user?.role === 'admin' && (
+            <NavLink
+              to="/admin/users"
+              className={({ isActive }) => (isActive ? styles.active : '')}
+            >
+              Пользователи
+            </NavLink>
+          )}
         </nav>
         <div className={styles.account}>
           {user ? (

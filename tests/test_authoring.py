@@ -249,3 +249,48 @@ def test_authoring_inputs_reject_role_escalation_and_unsafe_video() -> None:
         LessonWriteDTO(title="Test", summary="Text", video_url="https://evil.example/video")
     with pytest.raises(ValidationError):
         CourseWriteDTO(slug="bad slug", title="Test")
+
+
+async def test_invalid_existing_lesson_blocks_publish(
+    authoring: AuthoringService, teacher: UserDTO
+) -> None:
+    authoring.repository.course.return_value.modules[0].lessons[
+        0
+    ].video_url = "https://invalid.example"
+    with pytest.raises(HTTPException) as error:
+        await authoring.change_status(teacher, 10, 1, "published")
+    assert error.value.status_code == 422
+
+
+@pytest.mark.parametrize("reason", ["student", "inactive", "missing"])
+async def test_admin_assignment_requires_active_teacher(
+    authoring: AuthoringService, teacher: UserDTO, reason: str
+) -> None:
+    admin = teacher.model_copy(update={"role": "admin"})
+    target = (
+        teacher.model_copy(
+            update={
+                "id": 2,
+                "role": "student" if reason == "student" else "teacher",
+                "is_active": reason != "inactive",
+            }
+        )
+        if reason != "missing"
+        else None
+    )
+    authoring.repository.user.side_effect = [admin, admin, target]
+    with pytest.raises(HTTPException) as error:
+        await authoring.assign(admin, 10, 1, 2)
+    assert error.value.status_code == (404 if reason == "missing" else 422)
+    authoring.repository.assign.assert_not_awaited()
+
+
+async def test_admin_assignment_uses_role_lock_and_course_revision(
+    authoring: AuthoringService, teacher: UserDTO
+) -> None:
+    admin = teacher.model_copy(update={"role": "admin"})
+    authoring.repository.user.side_effect = [admin, admin, teacher]
+    await authoring.assign(admin, 10, 1, teacher.id)
+    authoring.repository.role_lock.assert_awaited_once()
+    authoring.repository.assign.assert_awaited_once_with(10, teacher.id)
+    assert authoring.repository.course.return_value.revision == 2

@@ -109,7 +109,8 @@ export function ModuleForm({
   save,
   disabled = false,
   submitLabel = 'Сохранить модуль',
-}: Props<ModuleValues>) {
+  resetAfterSave = false,
+}: Props<ModuleValues> & { resetAfterSave?: boolean }) {
   const {
     register,
     handleSubmit,
@@ -120,7 +121,7 @@ export function ModuleForm({
   const submit = handleSubmit(async (values) => {
     try {
       await save(values);
-      reset(submitLabel === 'Добавить модуль' ? { title: '', description: '' } : values);
+      reset(resetAfterSave ? { title: '', description: '' } : values);
     } catch {
       /* Keep unsaved input when a command fails. */
     }
