@@ -1,4 +1,6 @@
-.PHONY: sync run check test test-integration migrate up stop
+DOCKER_CONTEXT ?= desktop-linux
+
+.PHONY: sync run check test test-integration migrate up stop status logs
 
 sync:
 	uv sync --locked
@@ -21,7 +23,13 @@ migrate:
 	uv run alembic upgrade head
 
 up:
-	docker compose up --build -d
+	docker --context $(DOCKER_CONTEXT) compose up --build -d --wait
 
 stop:
-	docker compose stop
+	docker --context $(DOCKER_CONTEXT) compose stop
+
+status:
+	docker --context $(DOCKER_CONTEXT) compose ps --all
+
+logs:
+	docker --context $(DOCKER_CONTEXT) compose logs --tail 100
