@@ -1,13 +1,19 @@
+from unittest.mock import MagicMock
+from uuid import uuid4
+
 import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.app import get_app
 from src.auth.dependencies.current_user import ICurrentUser
 from src.auth.dependencies.token.service import get_token_service
 from src.auth.dto import UserDTO
+from src.auth.repositories.session import SessionRepo
 from src.auth.repositories.user import UserRepo
 from src.auth.service.token import TokenService
+from src.config.db.session import get_session
 from src.config.jwt import Settings as JwtSettings
 from src.config.security import Settings as SecuritySettings
 from src.health.service import HealthService
@@ -54,9 +60,17 @@ def test_current_user_dependency(active: bool, exists: bool) -> None:
 
     app.dependency_overrides[get_token_service] = lambda: service
     app.dependency_overrides[UserRepo] = FakeUserRepo
+
+    class FakeSessionRepo:
+        async def is_active(self, *args: object) -> bool:
+            return True
+
+    session = MagicMock(spec=AsyncSession)
+    app.dependency_overrides[SessionRepo] = FakeSessionRepo
+    app.dependency_overrides[get_session] = lambda: session
     with TestClient(app) as client:
         assert client.get("/test/me").status_code == 401
-        token = service.create_access_token(1).access_token
+        token = service.create_access_token(1, uuid4()).access_token
         response = client.get("/test/me", headers={"Authorization": f"Bearer {token}"})
         assert response.status_code == (200 if active and exists else 401)
         if response.status_code == 200:
