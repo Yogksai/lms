@@ -1,10 +1,6 @@
 import { z } from 'zod';
-export const userSchema = z.object({
-  id: z.number().int().positive(),
-  name: z.string(),
-  email: z.string().email(),
-  is_active: z.boolean(),
-});
+import { userSchema } from '@/shared/model/identity';
+export { userSchema };
 export const tokenPairSchema = z.object({
   access_token: z.string(),
   refresh_token: z.string().length(43),

@@ -8,7 +8,13 @@ const pair: TokenPair = {
   expires_in: 900,
   refresh_expires_in: 2592000,
 };
-const user = { id: 1, name: 'Student', email: 'student@example.com', is_active: true };
+const user = {
+  id: 1,
+  name: 'Student',
+  email: 'student@example.com',
+  is_active: true,
+  role: 'student' as const,
+};
 function setup() {
   const gateway: AccountGateway = {
     login: vi.fn().mockResolvedValue(pair),
