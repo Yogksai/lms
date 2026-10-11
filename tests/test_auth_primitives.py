@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+from uuid import uuid4
 
 import jwt
 import pytest
@@ -40,13 +41,13 @@ def test_entity_does_not_hash_or_mutate_credentials() -> None:
 
 
 def test_access_token_round_trip(token_service: TokenService) -> None:
-    token = token_service.create_access_token(42)
+    token = token_service.create_access_token(42, uuid4())
     assert token_service.verify_access_token(token.access_token).user_id == 42
 
 
 @pytest.mark.parametrize("change", ["expired", "refresh", "wrong_audience", "invalid_subject"])
 def test_invalid_claims_are_rejected(token_service: TokenService, change: str) -> None:
-    token = token_service.create_access_token(42).access_token
+    token = token_service.create_access_token(42, uuid4()).access_token
     payload = jwt.decode(
         token,
         token_service.secret_key,
@@ -67,7 +68,7 @@ def test_invalid_claims_are_rejected(token_service: TokenService, change: str) -
 
 
 def test_wrong_signature_is_rejected(token_service: TokenService) -> None:
-    token = token_service.create_access_token(42).access_token
+    token = token_service.create_access_token(42, uuid4()).access_token
     different_service = TokenService(
         JwtSettings(_env_file=None),
         SecuritySettings(_env_file=None, SECRET_KEY="different-test-key-" * 3),
