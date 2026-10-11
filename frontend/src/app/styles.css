@@ -1,0 +1,111 @@
+:root {
+  --blue: #0626d9;
+  --pink: #f3b6d0;
+  --pink-soft: #fbe5ef;
+  --background: #f6fafc;
+  --ink: #17171b;
+  --muted: #676b73;
+  --line: #8794e6;
+  font-family: 'Trebuchet MS', 'Arial', sans-serif;
+  color: var(--ink);
+  background: var(--background);
+  font-synthesis: none;
+  line-height: 1.5;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  min-width: 320px;
+}
+a {
+  color: var(--blue);
+  text-underline-offset: 5px;
+}
+button,
+input {
+  font: inherit;
+}
+button,
+a,
+input {
+  touch-action: manipulation;
+}
+:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 4px;
+}
+main {
+  max-width: 1080px;
+  margin: 62px auto;
+  padding: 0 28px 70px;
+}
+h2 {
+  font-weight: 400;
+  font-size: 26px;
+  margin: 32px 0 18px;
+}
+p {
+  overflow-wrap: anywhere;
+}
+form {
+  display: grid;
+  gap: 20px;
+}
+label {
+  display: grid;
+  gap: 8px;
+}
+input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #747986;
+  border-radius: 12px;
+  background: white;
+  color: var(--ink);
+}
+input[aria-invalid='true'] {
+  border-color: #b52648;
+}
+small {
+  color: var(--muted);
+}
+.field-error {
+  color: #a91e40;
+  font-size: 14px;
+}
+.form-panel {
+  max-width: 480px;
+  margin: auto;
+  padding: 30px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: white;
+}
+.actions {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.skip-link {
+  position: absolute;
+  left: 16px;
+  top: -70px;
+  padding: 12px;
+  background: white;
+  z-index: 10;
+}
+.skip-link:focus {
+  top: 8px;
+}
+@media (max-width: 600px) {
+  main {
+    margin-top: 34px;
+    padding: 0 18px 45px;
+  }
+  .form-panel {
+    padding: 22px;
+  }
+}
