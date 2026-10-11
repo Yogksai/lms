@@ -2,7 +2,7 @@
 name = "lms"
 version = "0.1.0"
 description = "Learning management system API"
-requires-python = ">=3.12,<3.13"
+requires-python = ">=3.14,<3.15"
 dependencies = [
     "fastapi>=0.115,<1",
     "uvicorn[standard]>=0.34,<1",
@@ -33,14 +33,14 @@ dev = [
 package = false
 
 [tool.ruff]
-target-version = "py312"
+target-version = "py314"
 line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "ASYNC"]
 
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.14"
 strict = true
 files = ["src", "bin"]
 plugins = ["pydantic.mypy"]
