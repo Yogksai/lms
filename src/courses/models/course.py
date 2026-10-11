@@ -13,12 +13,18 @@ if TYPE_CHECKING:
 
 class CourseModel(Base):
     __tablename__ = "courses"
-    __table_args__ = (CheckConstraint("length(trim(title)) > 0", name="title_not_empty"),)
+    __table_args__ = (
+        CheckConstraint("length(trim(title)) > 0", name="title_not_empty"),
+        CheckConstraint("NOT (is_published AND is_archived)", name="status_valid"),
+        CheckConstraint("revision > 0", name="revision_positive"),
+    )
 
     slug: Mapped[str] = mapped_column(String(100), unique=True)
     title: Mapped[str] = mapped_column(String(200))
     description: Mapped[str] = mapped_column(Text)
     is_published: Mapped[bool] = mapped_column(default=False, server_default=false(), index=True)
+    is_archived: Mapped[bool] = mapped_column(default=False, server_default=false())
+    revision: Mapped[int] = mapped_column(default=1, server_default="1")
     modules: Mapped[list[ModuleModel]] = relationship(
         back_populates="course",
         cascade="all, delete-orphan",
