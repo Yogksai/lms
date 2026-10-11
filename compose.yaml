@@ -20,6 +20,15 @@ x-backend: &backend
     CORS_ALLOW_CREDENTIALS: ${CORS_ALLOW_CREDENTIALS:-false}
 
 services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-3000}:8080"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
   postgres:
     image: postgres:17-alpine
     environment:
