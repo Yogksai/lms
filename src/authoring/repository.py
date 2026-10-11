@@ -1,3 +1,5 @@
+from collections.abc import Sequence
+
 from sqlalchemy import delete, func, select, text
 from sqlalchemy.orm import selectinload
 
@@ -117,7 +119,7 @@ class AuthoringRepo:
             )
         )
 
-    async def reorder(self, items: list[ModuleModel] | list[LessonModel], ids: list[int]) -> None:
+    async def reorder(self, items: Sequence[ModuleModel | LessonModel], ids: list[int]) -> None:
         by_id = {item.id: item for item in items}
         # Two flushes avoid immediate unique-position conflicts during swaps.
         temporary = max((item.position for item in items), default=0) + len(items) + 1
