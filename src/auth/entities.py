@@ -6,3 +6,4 @@ class UserEntity:
     name: str
     email: str
     password_hash: str | None = None
+    is_active: bool = False
