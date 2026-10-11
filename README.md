@@ -14,9 +14,9 @@ and regenerated with `uv lock` when dependencies or the supported Python version
 
 Implemented: validated settings, async database sessions, the initial account schema,
 password/token primitives, application lifecycle, health endpoints, Docker services,
-backend CI, and read-only course content with explicit demo seeding. Account
-registration/login, enrollment, payment, progress, and quizzes are scheduled for later
-stages. No frontend is included.
+backend CI, read-only course content with explicit demo seeding, and basic accounts
+with revocable sessions and rotating refresh tokens. Enrollment, payment, progress,
+and quizzes are scheduled for later stages. No frontend is included.
 
 ## Local containers
 
@@ -89,7 +89,7 @@ DB_NAME=lms_test_local make test-integration
 Use cases own transactions; repositories flush but do not commit. Public user DTOs
 exclude password hashes. Password hashing runs outside the event loop and rejects
 inputs above bcrypt's 72-byte UTF-8 limit. Passlib/bcrypt versions are pinned and
-compatibility-tested. Refresh sessions, OAuth flows, and email delivery are not yet implemented.
+compatibility-tested. OAuth flows, password reset, and email delivery are not yet implemented.
 
 ## Course content
 
@@ -128,7 +128,7 @@ docker --context desktop-linux compose exec api python -m bin.seed_courses
 docker --context desktop-linux compose exec api python -m bin.seed_courses
 ```
 
-The migration revision should be `0002`, with no schema differences. The first seed
+The migration revision should be `0003`, with no schema differences. The first seed
 run creates two demo courses on an empty database; the second creates zero. Seeding
 runs in a single transaction and skips existing slugs without overwriting content.
 Demo lessons use one general Python video; they are illustrative, not finished courses.
@@ -162,9 +162,109 @@ Use host database connection settings from `.env`; containers use `postgres` int
 ## Development notes
 
 - TODO: provision deployment secrets and replace development database credentials.
-- TODO: implement account/session workflows and role permissions in the next stage.
+- TODO: implement role permissions and verified email/password-change workflows.
+- TODO: configure login/registration rate limits before public deployment.
+- TODO: schedule expired session cleanup; cascading deletes also remove refresh token hashes.
 - TODO: add OAuth and email integrations when their feature stages begin.
 - TODO: configure HTTPS, backup/restore, and monitoring before public deployment.
 
 The container runs as a non-root user. Readiness checks PostgreSQL and Redis;
 liveness checks only the API process. No migration runs inside the application lifespan.
+
+## Basic accounts
+
+| Endpoint | Behavior |
+| --- | --- |
+| `POST /v1/auth/register` | Create an active account; return public profile (`201`) |
+| `POST /v1/auth/login` | Verify email/password; create a separate session and token pair |
+| `POST /v1/auth/refresh` | Consume a refresh token and issue a replacement pair |
+| `POST /v1/auth/logout` | Revoke the supplied refresh token's session (`204`) |
+| `GET /v1/auth/me` | Read the current profile using a Bearer access token |
+| `PATCH /v1/auth/me` | Update the display name using a Bearer access token |
+
+Registration takes `name`, `email`, and `password`. Login takes `email` and `password`.
+Refresh/logout take `refresh_token`. Profile updates take only `name`; email changes,
+password changes, account disabling, roles, OAuth, verification, and reset flows are
+outside this stage. Unknown request fields are rejected, including `is_active`.
+Passwords preserve whitespace and require 8–72 characters with a 72-byte UTF-8 limit
+at registration. Names are trimmed. Emails are canonicalized for registration/login,
+and PostgreSQL enforces a case-insensitive unique email index. Existing accounts that
+differ only by email case must be reconciled before migration `0003` can succeed;
+the migration never deletes or silently merges accounts.
+
+New registrations are active without an email-verification step for now. Existing
+inactive accounts are not automatically activated. Incorrect login details, inactive
+accounts, missing/expired/revoked sessions, and invalid tokens receive a generic `401`.
+
+### Session lifecycle
+
+Access tokens default to 15 minutes (`ACCESS_TOKEN_EXPIRE_SECONDS=900`). Refresh
+sessions have an absolute 30-day lifetime (`REFRESH_TOKEN_EXPIRE_SECONDS=2592000`),
+which rotation does not extend. Responses contain `access_token`, `refresh_token`,
+`token_type`, `expires_in`, and `refresh_expires_in` in seconds. Refresh tokens are
+opaque random secrets; only their SHA-256 hashes are stored in PostgreSQL.
+
+Access JWTs include a session ID. Every authenticated request checks both session
+validity and the account's active status, making logout effective for future requests
+without waiting for JWT expiry. Previously issued session-less access tokens are invalid.
+Each login creates an independent session; logout does not revoke other device sessions.
+Requests already authorized when logout/disable occurs may finish.
+
+Refresh rotation locks the parent session in a transaction. Reusing a consumed token
+revokes that session, including its latest access and refresh tokens. Clients must
+serialize refresh requests: concurrent refreshes or retries with an old token can
+trigger revocation. Consumed hashes are retained for reuse detection until session
+cleanup. Logout is idempotent, including for unrecognized tokens of valid input length.
+
+Token/profile responses use `Cache-Control: no-store`. Validation errors omit input
+values so passwords and refresh tokens are not echoed. HTTPS and secure client token
+storage are required before public deployment; no frontend storage strategy is added here.
+
+### Manual account verification
+
+After resolving any occupied development ports:
+
+```sh
+make up
+docker --context desktop-linux compose exec api alembic current
+docker --context desktop-linux compose exec api alembic check
+```
+
+Expect revision `0003` and no schema differences. In `/docs`:
+
+1. Register with a new email, name, and a password of at least 8 characters: expect
+   `201` without a password/hash in the response. Register the same email with different
+   capitalization: expect `409`.
+2. Login: expect a token pair. Use the access token in Swagger's **Authorize** dialog
+   (paste the token without the `Bearer` prefix). `GET /v1/auth/me` should return `200`.
+3. Update the display name using `PATCH /v1/auth/me`. An `is_active` or `email` field
+   should return `422`.
+4. Refresh once: expect new tokens. Save the replacement refresh token and access
+   token, then refresh again with the old token: expect `401`. The replacement access
+   token should now also fail on `/me` because the session was revoked.
+5. Login again and logout using its refresh token: expect `204`. Its access token
+   should fail on `/me`; logging out again should still return `204`.
+6. Incorrect passwords, invalid access tokens, and requests without Authorization
+   should return `401`. Too-short registration passwords should return `422` without
+   echoing the supplied password.
+
+Unit tests run without external services:
+
+```sh
+uv run pytest tests/test_accounts.py tests/test_auth_primitives.py tests/test_app.py tests/test_courses.py tests/test_settings.py -q
+```
+
+PostgreSQL lifecycle tests are in `tests/integration/test_accounts.py`. Use a new
+dedicated database, not the main LMS database:
+
+```sh
+docker --context desktop-linux compose exec postgres createdb -U lms lms_test_accounts
+DB_NAME=lms_test_accounts uv run alembic upgrade head
+DB_NAME=lms_test_accounts uv run alembic check
+DB_NAME=lms_test_accounts make test-integration
+```
+
+The account integration tests cover registration, profile updates, rotation, reuse
+revocation, logout, independent sessions, duplicate emails, and disabled accounts.
+They are transactional and roll back their data. Actual PostgreSQL lock behavior
+under concurrent refresh requests requires an additional manual concurrency check.
