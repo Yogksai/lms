@@ -28,6 +28,14 @@ export default function ProfilePage() {
       ) : (
         <>
           <p>Почта: {query.data.email}</p>
+          <p>
+            Роль:{' '}
+            {query.data.role === 'admin'
+              ? 'Администратор'
+              : query.data.role === 'teacher'
+                ? 'Преподаватель'
+                : 'Студент'}
+          </p>
           <ProfileForm name={query.data.name} />
           <p>
             <small>Изменение почты и пароля появится позднее.</small>
