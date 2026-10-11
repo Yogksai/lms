@@ -98,6 +98,10 @@ __pycache__/
 .coverage
 htmlcov/
 .env
+node_modules/
+frontend/dist/
+frontend/coverage/
+*.tsbuildinfo
 .env.*
 !.env.example
 node_modules/
