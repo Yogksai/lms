@@ -1,9 +1,11 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Path, Query
+from fastapi import APIRouter, Path, Query, Response
 
+from src.auth.dependencies.current_user import IOptionalUser
 from src.courses.dependencies.service import ICourseService
 from src.courses.dto import CourseDetailDTO, CoursePageDTO, LessonDTO, LessonOutlineDTO, ModuleDTO
+from src.enrollment.router import IEnrollmentService
 
 router = APIRouter(
     prefix="/courses", tags=["Courses"], responses={404: {"description": "Content not found"}}
@@ -48,5 +50,11 @@ async def lesson(
     module_id: ContentId,
     lesson_id: ContentId,
     service: ICourseService,
+    user: IOptionalUser,
+    access_service: IEnrollmentService,
+    response: Response,
 ) -> LessonDTO:
-    return await service.get_lesson(course_id, module_id, lesson_id)
+    response.headers["Cache-Control"] = "no-store"
+    response.headers["Vary"] = "Authorization"
+    full_access = await access_service.can_read(user, course_id) if user is not None else False
+    return await service.get_lesson(course_id, module_id, lesson_id, full_access=full_access)
