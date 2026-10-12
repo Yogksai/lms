@@ -39,6 +39,7 @@ function CourseEditor({ course, reload }: { course: EditorCourse; reload: () => 
         {course.revision}
       </p>
       <div className="actions">
+        <Link to={'/access/courses/' + course.id}>Заявки и доступ</Link>
         {course.status !== 'draft' && (
           <Button disabled={command.isPending} onClick={() => changeStatus('draft')}>
             Вернуть в черновик
