@@ -1,0 +1,37 @@
+.button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  border: 0;
+  border-radius: 18px;
+  background: var(--blue);
+  color: white;
+  padding: 12px 22px;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: none;
+}
+.button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.notice {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 24px;
+  margin: 24px 0;
+  background: white;
+}
+.heading {
+  font-size: clamp(26px, 3vw, 34px);
+  font-weight: 400;
+  margin: 0 0 32px;
+}
+.heading span {
+  background: linear-gradient(
+    transparent 65%,
+    var(--pink-soft) 65%,
+    var(--pink-soft) 92%,
+    transparent 92%
+  );
+}
