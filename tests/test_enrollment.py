@@ -320,6 +320,29 @@ async def test_repository_expiry_filter_is_strict_and_course_user_scoped() -> No
     assert query.params["expires_at_1"] == now and not result.sources
 
 
+async def test_admin_grant_is_independent_from_a_request(
+    enrollment: EnrollmentService, student: UserDTO
+) -> None:
+    admin = student.model_copy(update={"id": 2, "role": "admin"})
+    enrollment.repository.user.side_effect = [admin, student]
+    await enrollment.grant(admin, 10, GrantInputDTO(user_id=1, duration_days=10))
+    args = enrollment.repository.create_grant.call_args.args
+    assert args[:4] == (10, 1, "admin_grant", 2)
+    assert args[5] - args[4] == timedelta(days=10) and len(args) == 6
+
+
+async def test_failed_decision_rolls_back_its_grant(
+    enrollment: EnrollmentService, student: UserDTO
+) -> None:
+    admin = student.model_copy(update={"id": 2, "role": "admin"})
+    enrollment.repository.user.side_effect = [admin, student]
+    enrollment.repository.decide.side_effect = RuntimeError("Write failed")
+    with pytest.raises(RuntimeError):
+        await enrollment.decide(admin, 10, 20, DecisionDTO(decision="approve"))
+    enrollment.repository.create_grant.assert_awaited_once()
+    assert enrollment.session.begin.return_value.__aexit__.call_args.args[0] is RuntimeError
+
+
 @pytest.mark.parametrize("days", [0, -1, 366])
 def test_duration_and_escalation_input_validation(days: int) -> None:
     with pytest.raises(ValidationError):

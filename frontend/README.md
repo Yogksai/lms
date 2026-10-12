@@ -1,7 +1,7 @@
 # MathWithMe frontend
 
 React, TypeScript, Vite, React Router, TanStack Query, React Hook Form, Zod, and
-CSS Modules. This implements the foundation, course content, basic account, and teacher authoring
+CSS Modules. This implements the foundation, course content, basic accounts, teacher authoring and enrollment/access
 stages against the existing FastAPI API. Interface text is Russian, using the
 provided screenshots as the visual reference. No fake progress, purchases,
 workbooks, homework, ЕНТ tests, OAuth, or password-reset controls are included.
@@ -84,8 +84,9 @@ refresh token. Logout clears local identity immediately and attempts server revo
 A network failure displays a warning that server revocation was not confirmed.
 Late refresh/profile responses cannot restore a logged-out identity.
 
-Backend checks remain authoritative: login does not unlock later course modules.
-Successful authentication never bypasses publication or preview access rules.
+Backend checks remain authoritative: learner login/enrollment alone do not unlock
+later course modules. Active grants or staff permissions are required. Every full
+lesson still requires a published course and a matching parent hierarchy.
 
 ## Checks
 
@@ -126,7 +127,7 @@ integration checks remain manual; do not describe them as verified by unit tests
    labeled fields, and direct navigation/reloads on nested routes.
 
 TODO: add cookie-based persistent login only with the corresponding backend stage.
-TODO: add enrollment, progress, homework, files, and payments when their APIs exist.
+TODO: add progress, homework, files, and payments when their APIs exist.
 TODO: add live browser/end-to-end tests after manual integration verification.
 
 ## Teacher/admin workspaces
@@ -145,4 +146,23 @@ invalidate the public catalog; stale saves show a conflict and retain input.
 
 Setup, API contracts, first-admin bootstrap and the full manual verification sequence
 are in `../docs/authoring.md`. This stage changes the backend too: run migration
-`0004` before using the new frontend. No roles are granted from registration forms.
+`0005` before using the new frontend. No roles are granted from registration forms.
+
+## Enrollment and access
+
+`/my-courses` lists enrollments. Public course pages offer enrollment, request/cancel
+controls, decisions, expiry and grant history. The first module remains free for
+guests. Closed lesson pages offer the same request flow rather than a payment mock.
+The authoring course page links to `/access/courses/{id}`, where assigned teachers
+and admins approve/reject requests and revoke permissions. Only admins issue/revoke
+independent admin grants.
+
+Access/status and protected lesson queries use private account-scoped cache keys.
+Protected lessons revalidate on mount/focus and every 30 seconds while open. Logout
+clears private queries; late mutation responses do not restore private data. Local
+expiry labels update every second; API authorization remains the source of truth.
+Enrollment/access mutations are not automatically retried and recheck loaded lesson
+bodies. Other devices reflect external decisions at their next revalidation.
+
+See `../docs/enrollment.md` for full setup, API contracts and the manual test checklist.
+No payment provider, progress percentages or quizzes are included in stage 5.

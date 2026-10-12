@@ -16,11 +16,13 @@ Implemented: validated settings, async database sessions, the initial account sc
 password/token primitives, application lifecycle, health endpoints, Docker services,
 backend CI, read-only course content with explicit demo seeding, and basic accounts
 with revocable sessions and rotating refresh tokens, teacher assignments, content
-authoring, draft/publish/archive lifecycle, and admin role management. Enrollment, payment, progress,
+authoring, draft/publish/archive lifecycle, admin role management, enrollment,
+access requests, expiring approvals, and independent admin grants. Payment, progress,
 and quizzes are scheduled for later stages. The React frontend now covers the
-catalog, preview lessons, registration/login, profile editing, logout, and teacher/admin workspaces.
+catalog, lessons, basic accounts, teacher/admin workspaces, My courses and access screens.
 See `frontend/README.md` for setup, architecture, and manual frontend verification.
 See `docs/authoring.md` for stage 4 permissions, endpoints, admin bootstrap, and manual tests.
+See `docs/enrollment.md` for stage 5 access rules, endpoints, expiry and manual tests.
 
 ## Local containers
 
@@ -88,6 +90,7 @@ DB_NAME=lms_test_local make test-integration
 - `src/auth/`: DTOs, entities, typed ORM models, repositories, services, and DI aliases.
 - `src/courses/`: course/module/lesson content, catalog reads, preview access, and seeding.
 - `src/authoring/`: permission checks, authoring DTOs/repository/services, lifecycle and admin APIs.
+- `src/enrollment/`: course enrollment, requests, approval/grant ledger and effective access checks.
 - `src/health/`: service health checks.
 - `src/libs/`: shared primitives.
 - `migrations/`: explicit model registry and async Alembic migrations.
@@ -105,8 +108,10 @@ Course slugs are unique, and drafts are excluded from public reads. Deleting a c
 cascades to its modules and lessons.
 
 Published course/module/lesson outlines are public. Full summaries and video URLs are
-available only for the first module (the lowest position, not necessarily position 1).
-Later modules return `403` until enrollment/payment/teacher grants are implemented.
+free in the first module (the lowest position, not necessarily position 1).
+Later modules require a valid Bearer session with an active approval/admin grant
+and enrollment, or current admin/assigned-teacher rights. Enrollment alone does not
+unlock content. Publication and parent/child checks apply regardless of access reason.
 Outlines never include lesson bodies or videos. Missing content, drafts, archives, and mismatched
 parent/child IDs return `404`. Content-write endpoints require teacher/admin authentication.
 
@@ -116,7 +121,7 @@ parent/child IDs return `404`. Content-write endpoints require teacher/admin aut
 | `/v1/courses/{course_id}` | Course and ordered module/lesson outlines |
 | `/v1/courses/{course_id}/modules` | Ordered modules with `is_preview` |
 | `/v1/courses/{course_id}/modules/{module_id}/lessons` | Ordered lesson outlines |
-| `/v1/courses/{course_id}/modules/{module_id}/lessons/{lesson_id}` | Preview lesson summary and video |
+| `/v1/courses/{course_id}/modules/{module_id}/lessons/{lesson_id}` | Free preview or authorized lesson summary/video |
 
 Catalog pages have a maximum size of 100. Search is a case-insensitive literal title
 substring; `%` and `_` are not treated as wildcard input.
@@ -134,7 +139,7 @@ docker --context desktop-linux compose exec api python -m bin.seed_courses
 docker --context desktop-linux compose exec api python -m bin.seed_courses
 ```
 
-The migration revision should be `0004`, with no schema differences. The first seed
+The migration revision should be `0005`, with no schema differences. The first seed
 run creates two demo courses on an empty database; the second creates zero. Seeding
 runs in a single transaction and skips existing slugs without overwriting content.
 Demo lessons use one general Python video; they are illustrative, not finished courses.
@@ -148,7 +153,8 @@ curl -i 'http://127.0.0.1:8000/v1/courses?search=Python&limit=1'
 
 Use returned IDs rather than assuming IDs start at 1. Fetch the course detail,
 then request a lesson in its first module: expect `200` with summary and video.
-Request a lesson in its second module: expect `403`. An unrelated module/lesson ID
+Without a full-access grant or staff permission, request a lesson in its second module:
+expect `403`. An unrelated module/lesson ID
 should return `404`; `limit=101` or a negative ID should return `422`.
 
 For automated PostgreSQL checks, create a new dedicated test database (do not use the
@@ -238,7 +244,7 @@ docker --context desktop-linux compose exec api alembic current
 docker --context desktop-linux compose exec api alembic check
 ```
 
-Expect revision `0004` and no schema differences. In `/docs`:
+Expect revision `0005` and no schema differences. In `/docs`:
 
 1. Register with a new email, name, and a password of at least 8 characters: expect
    `201` without a password/hash in the response. Register the same email with different
