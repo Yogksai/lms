@@ -154,6 +154,17 @@ async def test_service_protects_later_modules(repository: AsyncMock) -> None:
         await CourseService(repository).get_lesson(1, 20, 200)
 
 
+async def test_full_access_unlocks_later_module_but_not_foreign_hierarchy(
+    repository: AsyncMock,
+) -> None:
+    await CourseService(repository).get_lesson(1, 20, 200, full_access=True)
+    repository.get_lesson.assert_awaited_once_with(1, 20, 200)
+    repository.get_lesson.reset_mock()
+    with pytest.raises(ContentNotFound):
+        await CourseService(repository).get_lesson(1, 999, 200, full_access=True)
+    repository.get_lesson.assert_not_awaited()
+
+
 @pytest.mark.parametrize(
     "url",
     [
