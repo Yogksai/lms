@@ -3,6 +3,8 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { CourseContext, createCourseQueries } from '@/entities/course';
+import { AccountContext, SessionManager } from '@/entities/session';
+import type { AccountGateway } from '@/entities/session';
 import { HttpError } from '@/shared/api';
 import LessonPage from './LessonPage';
 describe('lesson access states', () => {
@@ -12,18 +14,21 @@ describe('lesson access states', () => {
       request: vi.fn().mockRejectedValue(new HttpError(403, 'locked')),
       authorize: vi.fn(),
     });
+    const gateway = {} as AccountGateway;
     render(
       <QueryClientProvider client={client}>
-        <CourseContext.Provider value={queries}>
-          <MemoryRouter initialEntries={['/courses/1/modules/2/lessons/3']}>
-            <Routes>
-              <Route
-                path="/courses/:courseId/modules/:moduleId/lessons/:lessonId"
-                element={<LessonPage />}
-              />
-            </Routes>
-          </MemoryRouter>
-        </CourseContext.Provider>
+        <AccountContext.Provider value={{ gateway, session: new SessionManager(gateway, vi.fn()) }}>
+          <CourseContext.Provider value={queries}>
+            <MemoryRouter initialEntries={['/courses/1/modules/2/lessons/3']}>
+              <Routes>
+                <Route
+                  path="/courses/:courseId/modules/:moduleId/lessons/:lessonId"
+                  element={<LessonPage />}
+                />
+              </Routes>
+            </MemoryRouter>
+          </CourseContext.Provider>
+        </AccountContext.Provider>
       </QueryClientProvider>,
     );
     expect(await screen.findByRole('heading', { name: 'Закрытый урок' })).toBeInTheDocument();
