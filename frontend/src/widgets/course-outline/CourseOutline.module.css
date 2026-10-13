@@ -1,0 +1,35 @@
+.outline {
+  display: grid;
+  gap: 24px;
+}
+.module {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 22px;
+}
+.title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.title h2 {
+  margin: 0;
+}
+.preview {
+  border-radius: 12px;
+  padding: 5px 12px;
+  background: var(--pink-soft);
+  font-size: 14px;
+}
+.locked {
+  color: var(--muted);
+  font-size: 14px;
+}
+.module ol {
+  padding-left: 22px;
+  display: grid;
+  gap: 14px;
+}
