@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID
 
 from pydantic import (
@@ -12,6 +12,7 @@ from pydantic import (
 )
 
 UserName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=30)]
+Role = Literal["student", "teacher", "admin"]
 
 
 class UserDTO(BaseModel):
@@ -21,6 +22,7 @@ class UserDTO(BaseModel):
     name: UserName
     email: EmailStr
     is_active: bool
+    role: Role = "student"
 
 
 class UserCredentialsDTO(UserDTO):
