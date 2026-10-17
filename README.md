@@ -16,7 +16,9 @@ Implemented: validated settings, async database sessions, the initial account sc
 password/token primitives, application lifecycle, health endpoints, Docker services,
 backend CI, read-only course content with explicit demo seeding, and basic accounts
 with revocable sessions and rotating refresh tokens. Enrollment, payment, progress,
-and quizzes are scheduled for later stages. No frontend is included.
+and quizzes are scheduled for later stages. The React frontend now covers the
+catalog, preview lessons, registration/login, profile editing, and logout.
+See `frontend/README.md` for setup, architecture, and manual frontend verification.
 
 ## Local containers
 
@@ -33,12 +35,13 @@ Compose starts PostgreSQL and Redis, applies migrations in a separate one-shot
 service, then starts the API. Development ports bind only to localhost.
 
 - API documentation: http://127.0.0.1:8000/docs
+- Frontend: http://127.0.0.1:3000
 - Liveness: http://127.0.0.1:8000/health/live
 - Readiness: http://127.0.0.1:8000/health/ready
 
 `make up`, `make status`, `make logs`, and `make stop` use Docker Desktop by default.
 The `migrate` service exits successfully after applying migrations; the API, PostgreSQL,
-and Redis remain running. `make stop` retains PostgreSQL data.
+Redis, and the frontend remain running. `make stop` retains PostgreSQL data.
 
 ## Host development
 
@@ -218,7 +221,8 @@ cleanup. Logout is idempotent, including for unrecognized tokens of valid input 
 
 Token/profile responses use `Cache-Control: no-store`. Validation errors omit input
 values so passwords and refresh tokens are not echoed. HTTPS and secure client token
-storage are required before public deployment; no frontend storage strategy is added here.
+storage are required before public deployment. The current frontend keeps tokens
+in memory only; persistent login requires a separately agreed cookie flow.
 
 ### Manual account verification
 
