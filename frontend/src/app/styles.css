@@ -24,13 +24,60 @@ a {
   text-underline-offset: 5px;
 }
 button,
-input {
+input,
+textarea,
+select {
   font: inherit;
 }
 button,
 a,
-input {
+input,
+textarea,
+select {
   touch-action: manipulation;
+}
+textarea {
+  resize: vertical;
+}
+fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+.authoring-card {
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: white;
+  margin: 24px 0;
+}
+.authoring-card summary {
+  cursor: pointer;
+  font-size: 20px;
+  margin-bottom: 20px;
+}
+.authoring-list {
+  list-style: none;
+  padding: 0;
+}
+.authoring-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+.authoring-status {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 10px;
+  background: var(--pink-soft);
 }
 :focus-visible {
   outline: 3px solid var(--blue);
