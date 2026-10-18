@@ -88,6 +88,7 @@ class AuthoringService:
         try:
             async with self.session.begin():
                 if admin:
+                    await self.repository.role_lock()
                     await self.actor(user, admin=True)
                 course = await self.authorized_course(user, course_id, lock=True)
                 if course.revision != revision:
