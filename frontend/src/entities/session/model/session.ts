@@ -88,4 +88,13 @@ export class SessionManager {
     this.publish();
     return user;
   }
+  async reloadProfile() {
+    const epoch = this.epoch;
+    const user = await this.gateway.me();
+    if (epoch !== this.epoch) throw new HttpError(401, 'Сессия завершена');
+    if (!user.is_active) throw new HttpError(401, 'Аккаунт недоступен');
+    this.user = user;
+    this.publish();
+    return user;
+  }
 }
