@@ -3,6 +3,7 @@ from src.auth.models.session import AuthSessionModel
 from src.auth.models.user import UserModel
 from src.courses.models import CourseModel, LessonModel, ModuleModel
 from src.courses.models.assignment import TeacherAssignmentModel
+from src.enrollment.models import AccessGrantModel, AccessRequestModel, EnrollmentModel
 from src.libs.base_model import Base
 
 __all__ = [
@@ -14,4 +15,7 @@ __all__ = [
     "AuthSessionModel",
     "RefreshTokenModel",
     "TeacherAssignmentModel",
+    "EnrollmentModel",
+    "AccessRequestModel",
+    "AccessGrantModel",
 ]
