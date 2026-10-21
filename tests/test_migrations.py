@@ -12,3 +12,7 @@ def test_initial_migration_generates_postgresql_sql() -> None:
     assert "CREATE TABLE users" in result.stdout
     assert "CREATE UNIQUE INDEX ix_users_email" in result.stdout
     assert "password_hash" in result.stdout
+    assert "CREATE TABLE teacher_assignments" in result.stdout
+    assert "ADD COLUMN role VARCHAR(20) DEFAULT 'student' NOT NULL" in result.stdout
+    assert "NOT (is_published AND is_archived)" in result.stdout
+    assert "revision > 0" in result.stdout

@@ -152,6 +152,7 @@ function CourseEditor({ course, reload }: { course: EditorCourse; reload: () => 
           <ModuleForm
             initial={{ title: '', description: '' }}
             submitLabel="Добавить модуль"
+            resetAfterSave
             disabled={command.isPending}
             save={(body) => command.mutateAsync({ path: '/modules', method: 'POST', body })}
           />
@@ -230,7 +231,8 @@ function Course() {
   const [generation, setGeneration] = useState(0);
   const query = useQuery({ ...gateway.detail(id), refetchOnWindowFocus: false });
   if (!Number.isSafeInteger(id) || id <= 0) return <Notice error>Некорректный ID курса.</Notice>;
-  if (query.isPending) return <Notice>Загружаем редактор…</Notice>;
+  if (query.isPending || (!query.isFetchedAfterMount && query.isFetching))
+    return <Notice>Загружаем редактор…</Notice>;
   if (query.isError)
     return (
       <Notice error>
@@ -240,7 +242,7 @@ function Course() {
     );
   return (
     <CourseEditor
-      key={generation}
+      key={`${id}-${generation}`}
       course={query.data}
       reload={() => {
         if (window.confirm('Загрузить актуальную версию? Несохранённые поля будут сброшены.'))

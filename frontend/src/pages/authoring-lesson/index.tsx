@@ -78,7 +78,8 @@ function Lesson() {
     (lessonId !== 'new' && (!Number.isSafeInteger(Number(lessonId)) || Number(lessonId) <= 0))
   )
     return <Notice error>Некорректный адрес урока.</Notice>;
-  if (query.isPending) return <Notice>Загружаем урок…</Notice>;
+  if (query.isPending || (!query.isFetchedAfterMount && query.isFetching))
+    return <Notice>Загружаем урок…</Notice>;
   if (query.isError) return <Notice error>{authoringError(query.error)}</Notice>;
   return (
     <>
@@ -94,7 +95,7 @@ function Lesson() {
         Обновить данные
       </Button>
       <Editor
-        key={`${moduleId}-${lessonId}-${generation}`}
+        key={`${id}-${moduleId}-${lessonId}-${generation}`}
         course={query.data}
         moduleId={Number(moduleId)}
         lessonId={lessonId}

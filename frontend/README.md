@@ -1,7 +1,7 @@
 # MathWithMe frontend
 
 React, TypeScript, Vite, React Router, TanStack Query, React Hook Form, Zod, and
-CSS Modules. This implements the foundation, course content, and basic account
+CSS Modules. This implements the foundation, course content, basic account, and teacher authoring
 stages against the existing FastAPI API. Interface text is Russian, using the
 provided screenshots as the visual reference. No fake progress, purchases,
 workbooks, homework, ЕНТ tests, OAuth, or password-reset controls are included.
@@ -128,3 +128,21 @@ integration checks remain manual; do not describe them as verified by unit tests
 TODO: add cookie-based persistent login only with the corresponding backend stage.
 TODO: add enrollment, progress, homework, files, and payments when their APIs exist.
 TODO: add live browser/end-to-end tests after manual integration verification.
+
+## Teacher/admin workspaces
+
+`/authoring/courses` lists assigned courses for teachers and all courses for admins.
+The course editor supports draft metadata, modules, lesson ordering, publishing,
+archiving and admin-only teacher assignment. Lesson editors support plain-text
+summaries, validated YouTube URLs and preview of saved content. `/admin/users`
+supports paginated email search and role changes. Navigation follows the current
+role; protected pages check the live profile, while backend checks are authoritative.
+
+Private API DTOs use Zod, private query keys are cleared on logout, and late save
+responses cannot repopulate the course cache after an identity change. Mutations
+are not retried automatically. Successful saves update the course revision and
+invalidate the public catalog; stale saves show a conflict and retain input.
+
+Setup, API contracts, first-admin bootstrap and the full manual verification sequence
+are in `../docs/authoring.md`. This stage changes the backend too: run migration
+`0004` before using the new frontend. No roles are granted from registration forms.

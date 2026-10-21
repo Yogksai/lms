@@ -15,10 +15,12 @@ and regenerated with `uv lock` when dependencies or the supported Python version
 Implemented: validated settings, async database sessions, the initial account schema,
 password/token primitives, application lifecycle, health endpoints, Docker services,
 backend CI, read-only course content with explicit demo seeding, and basic accounts
-with revocable sessions and rotating refresh tokens. Enrollment, payment, progress,
+with revocable sessions and rotating refresh tokens, teacher assignments, content
+authoring, draft/publish/archive lifecycle, and admin role management. Enrollment, payment, progress,
 and quizzes are scheduled for later stages. The React frontend now covers the
-catalog, preview lessons, registration/login, profile editing, and logout.
+catalog, preview lessons, registration/login, profile editing, logout, and teacher/admin workspaces.
 See `frontend/README.md` for setup, architecture, and manual frontend verification.
+See `docs/authoring.md` for stage 4 permissions, endpoints, admin bootstrap, and manual tests.
 
 ## Local containers
 
@@ -85,6 +87,7 @@ DB_NAME=lms_test_local make test-integration
 - `src/config/`: environment settings and database/session dependencies.
 - `src/auth/`: DTOs, entities, typed ORM models, repositories, services, and DI aliases.
 - `src/courses/`: course/module/lesson content, catalog reads, preview access, and seeding.
+- `src/authoring/`: permission checks, authoring DTOs/repository/services, lifecycle and admin APIs.
 - `src/health/`: service health checks.
 - `src/libs/`: shared primitives.
 - `migrations/`: explicit model registry and async Alembic migrations.
@@ -104,8 +107,8 @@ cascades to its modules and lessons.
 Published course/module/lesson outlines are public. Full summaries and video URLs are
 available only for the first module (the lowest position, not necessarily position 1).
 Later modules return `403` until enrollment/payment/teacher grants are implemented.
-Outlines never include lesson bodies or videos. Missing content, drafts, and mismatched
-parent/child IDs return `404`. There are no public content-write endpoints in this stage.
+Outlines never include lesson bodies or videos. Missing content, drafts, archives, and mismatched
+parent/child IDs return `404`. Content-write endpoints require teacher/admin authentication.
 
 | GET endpoint | Response |
 | --- | --- |
@@ -131,7 +134,7 @@ docker --context desktop-linux compose exec api python -m bin.seed_courses
 docker --context desktop-linux compose exec api python -m bin.seed_courses
 ```
 
-The migration revision should be `0003`, with no schema differences. The first seed
+The migration revision should be `0004`, with no schema differences. The first seed
 run creates two demo courses on an empty database; the second creates zero. Seeding
 runs in a single transaction and skips existing slugs without overwriting content.
 Demo lessons use one general Python video; they are illustrative, not finished courses.
@@ -165,7 +168,7 @@ Use host database connection settings from `.env`; containers use `postgres` int
 ## Development notes
 
 - TODO: provision deployment secrets and replace development database credentials.
-- TODO: implement role permissions and verified email/password-change workflows.
+- TODO: implement verified email/password-change workflows.
 - TODO: configure login/registration rate limits before public deployment.
 - TODO: schedule expired session cleanup; cascading deletes also remove refresh token hashes.
 - TODO: add OAuth and email integrations when their feature stages begin.
@@ -187,8 +190,9 @@ liveness checks only the API process. No migration runs inside the application l
 
 Registration takes `name`, `email`, and `password`. Login takes `email` and `password`.
 Refresh/logout take `refresh_token`. Profile updates take only `name`; email changes,
-password changes, account disabling, roles, OAuth, verification, and reset flows are
-outside this stage. Unknown request fields are rejected, including `is_active`.
+password changes, account disabling, OAuth, verification, and reset flows are
+not implemented. Roles are managed only through the admin API, never registration
+or profile updates. Unknown request fields are rejected, including `is_active` and `role`.
 Passwords preserve whitespace and require 8–72 characters with a 72-byte UTF-8 limit
 at registration. Names are trimmed. Emails are canonicalized for registration/login,
 and PostgreSQL enforces a case-insensitive unique email index. Existing accounts that
@@ -234,7 +238,7 @@ docker --context desktop-linux compose exec api alembic current
 docker --context desktop-linux compose exec api alembic check
 ```
 
-Expect revision `0003` and no schema differences. In `/docs`:
+Expect revision `0004` and no schema differences. In `/docs`:
 
 1. Register with a new email, name, and a password of at least 8 characters: expect
    `201` without a password/hash in the response. Register the same email with different
