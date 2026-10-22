@@ -47,13 +47,14 @@ class CourseService:
                 return module.lessons
         raise ContentNotFound
 
-    async def get_lesson(self, course_id: int, module_id: int, lesson_id: int) -> LessonDTO:
+    async def get_lesson(
+        self, course_id: int, module_id: int, lesson_id: int, full_access: bool = False
+    ) -> LessonDTO:
         modules = await self.list_modules(course_id)
         module = next((item for item in modules if item.id == module_id), None)
         if module is None or not await self.repository.lesson_exists(module_id, lesson_id):
             raise ContentNotFound
-        # TODO: extend preview access with enrollment grants when that domain is implemented.
-        if not module.is_preview:
+        if not module.is_preview and not full_access:
             raise LessonAccessDenied
         lesson = await self.repository.get_lesson(course_id, module_id, lesson_id)
         if lesson is None:

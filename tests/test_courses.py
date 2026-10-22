@@ -10,6 +10,7 @@ from sqlalchemy.orm import configure_mappers
 
 from migrations.models import Base
 from src.app import get_app
+from src.auth.dependencies.current_user import get_optional_user
 from src.courses.dto import CourseDTO, CoursePageDTO, LessonDTO, LessonOutlineDTO, ModuleDTO
 from src.courses.exceptions import ContentNotFound, LessonAccessDenied
 from src.courses.models import CourseModel, LessonModel, ModuleModel
@@ -17,6 +18,7 @@ from src.courses.repositories.course import CourseRepo
 from src.courses.seed_data import COURSES, PYTHON_VIDEO
 from src.courses.service.course import CourseService
 from src.courses.service.seed import SeedService
+from src.enrollment.service import EnrollmentService
 
 
 @pytest.fixture
@@ -60,6 +62,8 @@ def repository() -> AsyncMock:
 def client(repository: AsyncMock) -> TestClient:
     app = get_app()
     app.dependency_overrides[CourseRepo] = lambda: repository
+    app.dependency_overrides[get_optional_user] = lambda: None
+    app.dependency_overrides[EnrollmentService] = lambda: AsyncMock(spec=EnrollmentService)
     # No lifespan or external connections: this exercises routes with an in-memory repository.
     return TestClient(app)
 
