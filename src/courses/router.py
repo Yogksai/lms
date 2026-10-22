@@ -5,7 +5,7 @@ from fastapi import APIRouter, Path, Query, Response
 from src.auth.dependencies.current_user import IOptionalUser
 from src.courses.dependencies.service import ICourseService
 from src.courses.dto import CourseDetailDTO, CoursePageDTO, LessonDTO, LessonOutlineDTO, ModuleDTO
-from src.enrollment.router import IEnrollmentService
+from src.enrollment.dependencies_service import IEnrollmentService
 
 router = APIRouter(
     prefix="/courses", tags=["Courses"], responses={404: {"description": "Content not found"}}

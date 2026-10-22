@@ -1,8 +1,9 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Path, Query, Response
 
 from src.auth.dependencies.current_user import ICurrentUser
+from src.enrollment.dependencies_service import IEnrollmentService
 from src.enrollment.dto import (
     AccessDTO,
     DecisionDTO,
@@ -14,9 +15,7 @@ from src.enrollment.dto import (
     RequestPageDTO,
     RequestStatus,
 )
-from src.enrollment.service import EnrollmentService
 
-IEnrollmentService = Annotated[EnrollmentService, Depends()]
 Id = Annotated[int, Path(gt=0)]
 Limit = Annotated[int, Query(ge=1, le=100)]
 Offset = Annotated[int, Query(ge=0)]
@@ -76,9 +75,11 @@ async def requests(
     service: IEnrollmentService,
     limit: Limit = 20,
     offset: Offset = 0,
-    status: Annotated[RequestStatus | None, Query()] = "pending",
+    status: Annotated[RequestStatus | Literal["all"], Query()] = "pending",
 ) -> RequestPageDTO:
-    return await service.requests(user, course_id, status, limit, offset)
+    return await service.requests(
+        user, course_id, None if status == "all" else status, limit, offset
+    )
 
 
 @management_router.put("/{course_id}/requests/{request_id}", status_code=204)
