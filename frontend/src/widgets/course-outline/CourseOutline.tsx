@@ -1,7 +1,13 @@
 import { Link } from 'react-router-dom';
 import type { CourseDetail } from '@/entities/course';
 import styles from './CourseOutline.module.css';
-export function CourseOutline({ course }: { course: CourseDetail }) {
+export function CourseOutline({
+  course,
+  fullAccess = false,
+}: {
+  course: CourseDetail;
+  fullAccess?: boolean;
+}) {
   return (
     <div className={styles.outline}>
       {course.modules.map((module) => (
@@ -10,8 +16,12 @@ export function CourseOutline({ course }: { course: CourseDetail }) {
             <h2>
               {module.position}. {module.title}
             </h2>
-            <span className={module.is_preview ? styles.preview : styles.locked}>
-              {module.is_preview ? 'Бесплатный просмотр' : 'Закрытый модуль'}
+            <span className={module.is_preview || fullAccess ? styles.preview : styles.locked}>
+              {module.is_preview
+                ? 'Бесплатный просмотр'
+                : fullAccess
+                  ? 'Доступен'
+                  : 'Закрытый модуль'}
             </span>
           </div>
           <p>{module.description}</p>
@@ -24,7 +34,9 @@ export function CourseOutline({ course }: { course: CourseDetail }) {
                   >
                     {lesson.title}
                   </Link>
-                  {!module.is_preview && <span className={styles.locked}> · Недоступно</span>}
+                  {!module.is_preview && !fullAccess && (
+                    <span className={styles.locked}> · Недоступно</span>
+                  )}
                 </li>
               ))}
             </ol>
