@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
@@ -18,8 +18,13 @@ function StudentAccess({ courseId, userId, outline }: Props & { userId: number }
   const query = useQuery(gateway.status(courseId, userId));
   const command = useAccessCommand();
   const [message, setMessage] = useState('');
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
   const status = query.data;
-  const full = !!status && !query.isError && hasFullAccess(status);
+  const full = !!status && !query.isError && hasFullAccess(status, now);
   const base = `/courses/${courseId}`;
   const pending = status?.request?.status === 'pending';
   return (
@@ -121,7 +126,7 @@ function StudentAccess({ courseId, userId, outline }: Props & { userId: number }
                         {new Date(grant.expires_at).toLocaleString('ru-RU')} ·{' '}
                         {grant.revoked_at
                           ? 'Отозван'
-                          : Date.parse(grant.expires_at) <= Date.now()
+                          : Date.parse(grant.expires_at) <= now
                             ? 'Истёк'
                             : 'Действует'}
                       </li>

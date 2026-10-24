@@ -37,6 +37,8 @@ export function createEnrollmentGateway(http: HttpClient) {
       params.set('status', status);
       return queryOptions({
         queryKey: ['private', 'enrollment', 'requests', courseId, status, offset],
+        enabled: Number.isSafeInteger(courseId) && courseId > 0,
+        refetchInterval: 30000,
         staleTime: 0,
         queryFn: async ({ signal }) =>
           requestPageSchema.parse(
@@ -50,6 +52,8 @@ export function createEnrollmentGateway(http: HttpClient) {
     grants(courseId: number, activeOnly: boolean, offset: number) {
       return queryOptions({
         queryKey: ['private', 'enrollment', 'grants', courseId, activeOnly, offset],
+        enabled: Number.isSafeInteger(courseId) && courseId > 0,
+        refetchInterval: 30000,
         staleTime: 0,
         queryFn: async ({ signal }) =>
           grantPageSchema.parse(

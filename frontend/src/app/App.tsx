@@ -15,6 +15,7 @@ const AuthoringCoursePage = lazy(() => import('@/pages/authoring-course'));
 const AuthoringLessonPage = lazy(() => import('@/pages/authoring-lesson'));
 const AdminUsersPage = lazy(() => import('@/pages/admin-users'));
 const MyCoursesPage = lazy(() => import('@/pages/my-courses'));
+const AccessManagementPage = lazy(() => import('@/pages/access-management'));
 class ErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() {
@@ -58,6 +59,7 @@ export function App() {
                 />
                 <Route path="/admin/users" element={<AdminUsersPage />} />
                 <Route path="/my-courses" element={<MyCoursesPage />} />
+                <Route path="/access/courses/:courseId" element={<AccessManagementPage />} />
                 <Route
                   path="*"
                   element={
