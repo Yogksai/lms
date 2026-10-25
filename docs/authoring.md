@@ -1,5 +1,8 @@
 # Teacher permissions and authoring
 
+Stage 5 extends learner permissions with enrollment/access grants; see `enrollment.md`.
+The current migration head is `0005`. The stage 4 migration itself remains `0004`.
+
 Stage 4 includes backend authorization and React authoring screens. Migration
 `0004` adds roles, teacher assignments, archive state, and course revisions. Existing
 users become students; existing published courses keep their publication state.
@@ -8,7 +11,7 @@ until teachers are assigned.
 
 ## Permissions and lifecycle
 
-- Students use public course reads and preview lessons only. Authentication alone
+- Students use public course reads, preview lessons and full lessons with stage 5 grants. Authentication alone
   never grants authoring or later-module access.
 - Teachers see/edit only assigned courses, including their full lesson bodies.
   Multiple assigned teachers collaborate with equal authoring rights. Teachers can
@@ -91,7 +94,7 @@ they are not evidence that the live migration or PostgreSQL locks were executed.
    docker --context desktop-linux compose exec api alembic check
    ```
 
-   Expect `0004` and no schema differences. Verify upgrade/downgrade only in a
+   Expect `0005` and no schema differences. Verify upgrade/downgrade only in a
    disposable database, not the main LMS database.
 2. Register separate admin, teacher A, teacher B and student accounts through the
    normal UI/API. Bootstrap only the initial admin, using its real registered email:
