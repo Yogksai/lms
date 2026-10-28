@@ -21,3 +21,10 @@ def test_initial_migration_generates_postgresql_sql() -> None:
     assert "CREATE TABLE access_grants" in result.stdout
     assert "CREATE UNIQUE INDEX uq_access_requests_pending" in result.stdout
     assert "expires_at > created_at" in result.stdout
+    assert "CREATE TABLE module_quizzes" in result.stdout
+    assert "CREATE TABLE quiz_questions" in result.stdout
+    assert "CREATE TABLE quiz_attempts" in result.stdout
+    assert "CREATE UNIQUE INDEX uq_quiz_attempts_open" in result.stdout
+    assert "CREATE TABLE lesson_progress" in result.stdout
+    assert "CREATE TABLE learning_outbox" in result.stdout
+    assert "CREATE TABLE learning_notifications" in result.stdout
