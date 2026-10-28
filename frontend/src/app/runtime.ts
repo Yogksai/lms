@@ -2,6 +2,7 @@ import { QueryClient } from '@tanstack/react-query';
 import { createCourseQueries } from '@/entities/course';
 import { createAuthoringGateway } from '@/entities/authoring';
 import { createEnrollmentGateway } from '@/entities/enrollment';
+import { createQuizGateway } from '@/entities/quiz';
 import { createAccountGateway, SessionManager } from '@/entities/session';
 import { createHttpClient, HttpError } from '@/shared/api';
 export const queryClient = new QueryClient({
@@ -23,3 +24,4 @@ http.authorize(session);
 export const courseQueries = createCourseQueries(http);
 export const authoringGateway = createAuthoringGateway(http);
 export const enrollmentGateway = createEnrollmentGateway(http);
+export const quizGateway = createQuizGateway(http);

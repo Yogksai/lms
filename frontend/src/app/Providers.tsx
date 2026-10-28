@@ -4,9 +4,11 @@ import { AccountContext } from '@/entities/session';
 import { CourseContext } from '@/entities/course';
 import { AuthoringContext } from '@/entities/authoring';
 import { EnrollmentContext } from '@/entities/enrollment';
+import { QuizContext } from '@/entities/quiz';
 import {
   authoringGateway,
   enrollmentGateway,
+  quizGateway,
   courseQueries,
   gateway,
   queryClient,
@@ -19,7 +21,7 @@ export function Providers({ children }: { children: ReactNode }) {
         <CourseContext.Provider value={courseQueries}>
           <AuthoringContext.Provider value={authoringGateway}>
             <EnrollmentContext.Provider value={enrollmentGateway}>
-              {children}
+              <QuizContext.Provider value={quizGateway}>{children}</QuizContext.Provider>
             </EnrollmentContext.Provider>
           </AuthoringContext.Provider>
         </CourseContext.Provider>
