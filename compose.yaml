@@ -18,8 +18,54 @@ x-backend: &backend
     REFRESH_TOKEN_EXPIRE_SECONDS: ${REFRESH_TOKEN_EXPIRE_SECONDS:-2592000}
     CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS:-[]}
     CORS_ALLOW_CREDENTIALS: ${CORS_ALLOW_CREDENTIALS:-false}
+    QUIZ_TIMEZONE: ${QUIZ_TIMEZONE:-Asia/Almaty}
+    QUIZ_DAILY_ATTEMPTS: ${QUIZ_DAILY_ATTEMPTS:-5}
+    RABBITMQ_HOST: rabbitmq
+    RABBITMQ_USER: ${RABBITMQ_USER:-lms}
+    RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-lms-local}
 
 services:
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-lms}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-lms-local}
+    ports:
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  event-publisher:
+    <<: *backend
+    command: ["python", "-m", "src.learning_events.worker", "publisher"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      disable: true
+    restart: unless-stopped
+
+  notification-worker:
+    <<: *backend
+    command: ["python", "-m", "src.learning_events.worker", "consumer"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      disable: true
+    restart: unless-stopped
+
   frontend:
     build: ./frontend
     ports:
@@ -83,3 +129,4 @@ services:
 
 volumes:
   postgres_data:
+  rabbitmq_data:
