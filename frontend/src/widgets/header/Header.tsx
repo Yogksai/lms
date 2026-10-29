@@ -17,6 +17,7 @@ export function Header() {
           <NavLink to="/courses" className={({ isActive }) => (isActive ? styles.active : '')}>
             Курсы
           </NavLink>
+          {user && <NavLink to="/notifications">Уведомления</NavLink>}
           {user && (
             <NavLink to="/my-courses" className={({ isActive }) => (isActive ? styles.active : '')}>
               Мои курсы

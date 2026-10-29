@@ -5,10 +5,12 @@ import { CourseContext } from '@/entities/course';
 import { AuthoringContext } from '@/entities/authoring';
 import { EnrollmentContext } from '@/entities/enrollment';
 import { QuizContext } from '@/entities/quiz';
+import { NotificationContext } from '@/entities/notification';
 import {
   authoringGateway,
   enrollmentGateway,
   quizGateway,
+  notificationGateway,
   courseQueries,
   gateway,
   queryClient,
@@ -21,7 +23,11 @@ export function Providers({ children }: { children: ReactNode }) {
         <CourseContext.Provider value={courseQueries}>
           <AuthoringContext.Provider value={authoringGateway}>
             <EnrollmentContext.Provider value={enrollmentGateway}>
-              <QuizContext.Provider value={quizGateway}>{children}</QuizContext.Provider>
+              <QuizContext.Provider value={quizGateway}>
+                <NotificationContext.Provider value={notificationGateway}>
+                  {children}
+                </NotificationContext.Provider>
+              </QuizContext.Provider>
             </EnrollmentContext.Provider>
           </AuthoringContext.Provider>
         </CourseContext.Provider>

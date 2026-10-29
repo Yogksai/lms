@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useCourseQueries } from '@/entities/course';
 import { CourseOutline } from '@/widgets/course-outline';
 import { CourseAccess } from '@/features/course-access';
+import { CourseProgress } from '@/features/learning-progress';
 import { errorMessage } from '@/shared/api';
 import { Button, Heading, Notice } from '@/shared/ui';
 export default function CoursePage() {
@@ -26,6 +27,7 @@ export default function CoursePage() {
         <>
           <Heading>{query.data.title}</Heading>
           <p>{query.data.description}</p>
+          <CourseProgress courseId={id} />
           <p>
             <small>
               Количество модулей: {query.data.modules.length}. Первый модуль доступен бесплатно.

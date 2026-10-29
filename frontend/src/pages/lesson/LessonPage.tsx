@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useCourseQueries } from '@/entities/course';
 import { useCurrentUser } from '@/entities/session';
 import { CourseAccess } from '@/features/course-access';
+import { LessonCompletion } from '@/features/learning-progress';
 import { LessonViewer } from '@/widgets/lesson-viewer';
 import { HttpError, errorMessage } from '@/shared/api';
 import { Button, Heading, LinkButton, Notice } from '@/shared/ui';
@@ -42,6 +43,7 @@ export default function LessonPage() {
         <>
           <Heading>{query.data.title}</Heading>
           <LessonViewer key={query.data.id} lesson={query.data} />
+          <LessonCompletion courseId={courseId} moduleId={moduleId} lessonId={lessonId} />
         </>
       )}
     </>
