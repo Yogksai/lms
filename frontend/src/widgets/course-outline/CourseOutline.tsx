@@ -25,6 +25,13 @@ export function CourseOutline({
             </span>
           </div>
           <p>{module.description}</p>
+          {(module.is_preview || fullAccess) && (
+            <p>
+              <Link to={`/courses/${course.id}/modules/${module.id}/quiz`}>
+                Тест по модулю и история попыток
+              </Link>
+            </p>
+          )}
           {module.lessons.length ? (
             <ol>
               {module.lessons.map((lesson) => (
