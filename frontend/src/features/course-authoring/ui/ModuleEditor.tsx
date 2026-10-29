@@ -26,6 +26,11 @@ export function ModuleEditor({
         disabled={disabled}
         save={(body) => run({ path, method: 'PUT', body })}
       />
+      <p>
+        <Link to={`/authoring/courses/${courseId}/modules/${module.id}/quiz`}>
+          Настройки теста и банк вопросов
+        </Link>
+      </p>
       <h3>Уроки</h3>
       {module.lessons.length === 0 && <p>В этом модуле пока нет уроков.</p>}
       <ol className="authoring-list">
