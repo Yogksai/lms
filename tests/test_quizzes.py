@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -6,6 +7,7 @@ import pytest
 from fastapi import HTTPException
 from pydantic import ValidationError
 from redis.exceptions import ConnectionError as RedisConnectionError
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.dto import UserDTO
@@ -301,3 +303,112 @@ async def test_redis_failure_is_non_authoritative() -> None:
     await cache.save("key", [question()])
     assert cache.key(1, 2, 3) != cache.key(1, 2, 4)
     assert cache.key(1, 2, 3) != cache.key(1, 3, 3)
+
+
+@pytest.mark.parametrize(
+    "enrolled,grants,staff,allowed",
+    [
+        (False, [], None, False),
+        (True, [], None, False),
+        (False, ["admin_grant"], None, False),
+        (True, ["admin_grant"], None, True),
+        (False, [], "assigned_teacher", True),
+        (False, [], "admin", True),
+    ],
+)
+async def test_non_preview_quiz_access(
+    service: QuizService,
+    learner: UserDTO,
+    enrolled: bool,
+    grants: list,
+    staff: str | None,
+    allowed: bool,
+) -> None:
+    service.access.staff_reason.return_value = staff
+    service.access.repository.enrolled.return_value = enrolled
+    service.access.repository.grant_access.return_value = GrantAccess(grants, None)
+    if allowed:
+        await service.require_access(learner, 10, preview=False)
+    else:
+        with pytest.raises(HTTPException) as error:
+            await service.require_access(learner, 10, preview=False)
+        assert error.value.status_code == 403
+
+
+async def test_outbox_failure_rolls_back_submission(service: QuizService, learner: UserDTO) -> None:
+    with patch("src.quizzes.service.LearningEventRepo") as repo:
+        repo.return_value.enqueue = AsyncMock(side_effect=RuntimeError("storage failure"))
+        with pytest.raises(RuntimeError):
+            await service.submit(learner, 10, uuid4(), SubmitDTO(answers={1: "A"}))
+    args = service.session.begin.return_value.__aexit__.await_args.args
+    assert args[0] is RuntimeError
+
+
+@pytest.mark.parametrize(
+    "enabled,passed,done,complete",
+    [
+        (True, True, False, True),
+        (True, False, True, False),
+        (False, True, True, False),
+        (False, False, False, False),
+    ],
+)
+async def test_progress_separates_reading_from_quiz_pass(
+    enabled: bool, passed: bool, done: bool, complete: bool
+) -> None:
+    session = MagicMock(spec=AsyncSession)
+    session.scalars.side_effect = [
+        [SimpleNamespace(id=20, title="Math", lessons=[SimpleNamespace(id=2)])],
+        [2] if done else [],
+        [20] if enabled else [],
+    ]
+    session.execute.return_value = [(20, passed, 100 if passed else 0)]
+    progress = await QuizRepo(session).progress(1, 10)
+    assert progress.complete is complete
+    assert progress.lesson_percent == (100 if done else 0)
+    assert progress.passed_modules == int(enabled and passed)
+
+
+async def test_empty_course_is_not_completed() -> None:
+    session = MagicMock(spec=AsyncSession)
+    session.scalars.side_effect = [[], [], []]
+    session.execute.return_value = []
+    progress = await QuizRepo(session).progress(1, 10)
+    assert not progress.complete and progress.quiz_percent == 0
+
+
+async def test_lesson_mark_is_idempotent_and_unmark_is_owned() -> None:
+    session = MagicMock(spec=AsyncSession)
+    repo = QuizRepo(session)
+    await repo.mark_lesson(1, 10, 2, True)
+    sql = str(session.execute.await_args.args[0].compile(dialect=postgresql.dialect()))
+    assert "ON CONFLICT (user_id, lesson_id) DO NOTHING" in sql
+    await repo.mark_lesson(1, 10, 2, False)
+    statement = session.execute.await_args.args[0]
+    assert statement.compile().params == {"user_id_1": 1, "lesson_id_1": 2}
+
+
+async def test_teacher_cannot_attach_question_to_foreign_lesson(
+    service: QuizService, learner: UserDTO
+) -> None:
+    author = QuizAuthoringService(service.session, service.repository, service.access)
+    service.access.manage = AsyncMock()
+    data = QuestionWriteDTO(
+        lesson_id=999, prompt="Q", options=question().options, correct_option="A", explanation="Why"
+    )
+    with pytest.raises(HTTPException) as error:
+        await author.question(learner, 10, 20, 1, data)
+    assert error.value.status_code == 422
+    service.repository.save_question.assert_not_awaited()
+
+
+async def test_quiz_enabling_requires_enough_active_questions(
+    service: QuizService, learner: UserDTO
+) -> None:
+    author = QuizAuthoringService(service.session, service.repository, service.access)
+    service.access.manage = AsyncMock()
+    service.repository.active_count.return_value = 2
+    with pytest.raises(HTTPException) as error:
+        await author.configure(learner, 10, 20, 1, QuizWriteDTO(enabled=True))
+    assert error.value.status_code == 422
+    service.repository.save_config.assert_not_awaited()
