@@ -17,12 +17,14 @@ password/token primitives, application lifecycle, health endpoints, Docker servi
 backend CI, read-only course content with explicit demo seeding, and basic accounts
 with revocable sessions and rotating refresh tokens, teacher assignments, content
 authoring, draft/publish/archive lifecycle, admin role management, enrollment,
-access requests, expiring approvals, and independent admin grants. Payment, progress,
-and quizzes are scheduled for later stages. The React frontend now covers the
-catalog, lessons, basic accounts, teacher/admin workspaces, My courses and access screens.
+access requests, expiring approvals, independent admin grants, module question banks,
+snapshot-based quizzes, grading, lesson progress, and RabbitMQ-delivered notifications.
+Payment remains a later stage. The React frontend covers the catalog, lessons, basic
+accounts, teacher/admin workspaces, enrollment, quizzes, progress and notifications.
 See `frontend/README.md` for setup, architecture, and manual frontend verification.
 See `docs/authoring.md` for stage 4 permissions, endpoints, admin bootstrap, and manual tests.
 See `docs/enrollment.md` for stage 5 access rules, endpoints, expiry and manual tests.
+See `docs/quizzes.md` for stage 6 quiz rules, Redis/RabbitMQ, and manual checks.
 
 ## Local containers
 
@@ -35,17 +37,18 @@ docker --context desktop-linux compose up --build -d --wait
 docker --context desktop-linux compose ps --all
 ```
 
-Compose starts PostgreSQL and Redis, applies migrations in a separate one-shot
-service, then starts the API. Development ports bind only to localhost.
+Compose starts PostgreSQL, Redis and RabbitMQ, applies migrations in a separate one-shot
+service, then starts the API and event publisher/notification worker. Development ports bind only to localhost.
 
 - API documentation: http://127.0.0.1:8000/docs
 - Frontend: http://127.0.0.1:3000
 - Liveness: http://127.0.0.1:8000/health/live
 - Readiness: http://127.0.0.1:8000/health/ready
+- RabbitMQ management: http://127.0.0.1:15672 (local credentials from `.env`)
 
 `make up`, `make status`, `make logs`, and `make stop` use Docker Desktop by default.
 The `migrate` service exits successfully after applying migrations; the API, PostgreSQL,
-Redis, and the frontend remain running. `make stop` retains PostgreSQL data.
+Redis, RabbitMQ, both workers and the frontend remain running. `make stop` retains database/broker volumes.
 
 ## Host development
 
@@ -91,6 +94,8 @@ DB_NAME=lms_test_local make test-integration
 - `src/courses/`: course/module/lesson content, catalog reads, preview access, and seeding.
 - `src/authoring/`: permission checks, authoring DTOs/repository/services, lifecycle and admin APIs.
 - `src/enrollment/`: course enrollment, requests, approval/grant ledger and effective access checks.
+- `src/quizzes/`: question banks, immutable attempts, grading, lesson progress and private Redis cache.
+- `src/learning_events/`: transactional outbox, RabbitMQ workers and personal notification inbox.
 - `src/health/`: service health checks.
 - `src/libs/`: shared primitives.
 - `migrations/`: explicit model registry and async Alembic migrations.
