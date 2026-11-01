@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
-import { choices, quizKey, useQuizGateway } from '@/entities/quiz';
+import { choices, quizError, quizKey, useQuizGateway } from '@/entities/quiz';
 import type { Attempt, Choice, QuizInfo } from '@/entities/quiz';
 import { useAccount, useCurrentUser } from '@/entities/session';
-import { errorMessage } from '@/shared/api';
 import { Button, Notice } from '@/shared/ui';
 
 export function QuizStart({ info, courseId }: { info: QuizInfo; courseId: number }) {
@@ -54,7 +53,7 @@ export function QuizStart({ info, courseId }: { info: QuizInfo; courseId: number
       )}
       {start.isError && (
         <Notice error>
-          {errorMessage(start.error)} Обнови страницу, чтобы проверить наличие начатой попытки.
+          {quizError(start.error)} Обнови страницу, чтобы проверить наличие начатой попытки.
         </Notice>
       )}
     </section>
@@ -152,7 +151,7 @@ export function AttemptForm({ attempt }: { attempt: Attempt }) {
       </fieldset>
       {submit.isError && (
         <Notice error>
-          {errorMessage(submit.error)} Ответы остались в форме. При сетевой ошибке можно повторить
+          {quizError(submit.error)} Ответы остались в форме. При сетевой ошибке можно повторить
           сдачу с теми же ответами.
         </Notice>
       )}

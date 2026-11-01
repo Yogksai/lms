@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
-import { useQuizGateway } from '@/entities/quiz';
+import { quizError, useQuizGateway } from '@/entities/quiz';
 import { useCurrentUser } from '@/entities/session';
 import { QuizStart } from '@/features/quiz-taking';
-import { errorMessage } from '@/shared/api';
 import { Button, Heading, Notice } from '@/shared/ui';
 function Quiz({
   userId,
@@ -30,7 +29,7 @@ function Quiz({
         <Notice>Загружаем тест…</Notice>
       ) : info.isError ? (
         <Notice error>
-          {errorMessage(info.error)} <Button onClick={() => void info.refetch()}>Повторить</Button>
+          {quizError(info.error)} <Button onClick={() => void info.refetch()}>Повторить</Button>
         </Notice>
       ) : (
         <QuizStart key={`${courseId}-${moduleId}`} info={info.data} courseId={courseId} />
@@ -38,7 +37,7 @@ function Quiz({
       <h2>Твои попытки</h2>
       {history.isError ? (
         <Notice error>
-          {errorMessage(history.error)}{' '}
+          {quizError(history.error)}{' '}
           <Button onClick={() => void history.refetch()}>Повторить</Button>
         </Notice>
       ) : history.data ? (

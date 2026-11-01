@@ -1,9 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
-import { useQuizGateway } from '@/entities/quiz';
+import { quizError, useQuizGateway } from '@/entities/quiz';
 import { useCurrentUser } from '@/entities/session';
 import { AttemptForm, AttemptReview } from '@/features/quiz-taking';
-import { errorMessage } from '@/shared/api';
 import { Button, Heading, Notice } from '@/shared/ui';
 function Attempt({
   userId,
@@ -23,7 +22,7 @@ function Attempt({
   if (query.isError)
     return (
       <Notice error>
-        {errorMessage(query.error)} <Button onClick={() => void query.refetch()}>Повторить</Button>
+        {quizError(query.error)} <Button onClick={() => void query.refetch()}>Повторить</Button>
       </Notice>
     );
   const attempt = query.data;

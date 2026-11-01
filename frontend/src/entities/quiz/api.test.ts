@@ -2,22 +2,27 @@ import { QueryClient } from '@tanstack/react-query';
 import { describe, expect, it, vi } from 'vitest';
 import { createQuizGateway, quizKey } from './api';
 import { attemptSchema, questionWriteSchema, quizWriteSchema } from './model';
+import { quizError } from './errors';
+import { HttpError } from '@/shared/api';
 describe('quiz gateway and contracts', () => {
+  it.each([403, 409, 429])('uses quiz-specific errors for status %s', (status) => {
+    const text = quizError(new HttpError(status, 'failure'));
+    expect(text).not.toContain('почтой');
+    expect(text).not.toContain('связаться');
+  });
   it('keeps quiz data private and scoped to the current account', async () => {
-    const request = vi
-      .fn()
-      .mockResolvedValue({
-        module_id: 20,
-        available: true,
-        question_count: 10,
-        passing_score: 70,
-        time_limit_seconds: 600,
-        remaining_today: 5,
-        daily_limit: 5,
-        reset_at: '2026-10-23T19:00:00Z',
-        timezone: 'Asia/Almaty',
-        open_attempt: null,
-      });
+    const request = vi.fn().mockResolvedValue({
+      module_id: 20,
+      available: true,
+      question_count: 10,
+      passing_score: 70,
+      time_limit_seconds: 600,
+      remaining_today: 5,
+      daily_limit: 5,
+      reset_at: '2026-10-23T19:00:00Z',
+      timezone: 'Asia/Almaty',
+      open_attempt: null,
+    });
     const gateway = createQuizGateway({ request, authorize: vi.fn() });
     const client = new QueryClient();
     await client.fetchQuery(gateway.info(1, 10, 20));

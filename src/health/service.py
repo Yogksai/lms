@@ -18,8 +18,12 @@ class HealthService:
         try:
             async with asyncio.timeout(6):
                 await self.database.check_connection()
+        except Exception:
+            logger.warning("Database readiness check failed")
+            return False
+        try:
+            async with asyncio.timeout(2):
                 await cast(Awaitable[bool], self.redis.ping())
         except Exception:
-            logger.warning("Readiness check failed")
-            return False
+            logger.warning("Redis unavailable; optional quiz acceleration is degraded")
         return True

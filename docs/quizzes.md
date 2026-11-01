@@ -175,7 +175,8 @@ HTTP healthcheck: they are not web servers. Restart policies restart failed proc
     Never flush PostgreSQL or delete volumes to reset tests.
 14. Check keyboard/radio navigation, narrow/mobile layouts, long question text, error
     retries and logging out during a pending submission. No old-account result should
-    appear after another account logs in. Check that reload warns about unsaved answers.
+    appear after another account logs in. Check the visible warning about losing unsaved
+    answers on reload; there is no answer-draft persistence in this stage.
 
 Automated local checks are unit/mocked HTTP tests, offline migration SQL generation,
 Ruff/mypy, frontend typecheck/lint/FSD boundary checks, Vitest and production build.
